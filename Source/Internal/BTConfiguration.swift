@@ -36,6 +36,8 @@ final class BTConfiguration {
     var cellTextLabelAlignment: NSTextAlignment!
     var cellSelectionColor: UIColor?
     var checkMarkImage: UIImage!
+    var checkMarkImageSize: CGSize!
+    var checkMarkImageRightOffset: CGFloat!
     var shouldKeepSelectedCellColor: Bool!
     var arrowTintColor: UIColor?
     var arrowImage: UIImage!
@@ -78,5 +80,7 @@ final class BTConfiguration {
         self.maskBackgroundColor = UIColor.black
         self.maskBackgroundOpacity = 0.3
         self.shouldChangeTitleText = true
+        self.checkMarkImageRightOffset = 16.0
+        self.checkMarkImageSize = CGSize(width: 30.0, height: 30.0)
     }
 }

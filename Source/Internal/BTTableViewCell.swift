@@ -30,10 +30,12 @@ class BTTableViewCell: UITableViewCell {
     var checkmarkIcon: UIImageView!
     var cellContentFrame: CGRect!
     var configuration: BTConfiguration!
+    var isLastCell: Bool = false
     
-    init(style: UITableViewCellStyle, reuseIdentifier: String?, configuration: BTConfiguration) {
+    init(style: UITableViewCellStyle, reuseIdentifier: String?, configuration: BTConfiguration, isLast: Bool) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         
+        self.isLastCell = isLast
         self.configuration = configuration
         
         // Setup cell
@@ -65,11 +67,17 @@ class BTTableViewCell: UITableViewCell {
         self.contentView.addSubview(self.checkmarkIcon)
         
         // Separator for cell
+        
         let separator = BTTableCellContentView(frame: cellContentFrame)
         if let cellSeparatorColor = self.configuration.cellSeparatorColor {
-            separator.separatorColor = cellSeparatorColor
+            if !isLastCell {
+                separator.separatorColor = cellSeparatorColor
+            } else {
+                separator.separatorColor = .clear
+            }
         }
         self.contentView.addSubview(separator)
+        
     }
     
     required init?(coder aDecoder: NSCoder) {

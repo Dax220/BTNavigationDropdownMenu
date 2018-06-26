@@ -259,6 +259,7 @@ open class BTNavigationDropdownMenu: UIView {
     fileprivate var backgroundView: UIView!
     fileprivate var tableView: BTTableView!
     fileprivate var items: [String]!
+    fileprivate var titleItems: [String]!
     fileprivate var menuWrapper: UIView!
     
     required public init?(coder aDecoder: NSCoder) {
@@ -275,9 +276,9 @@ open class BTNavigationDropdownMenu: UIView {
      - title: A string to define title to be displayed.
      - items: The array of items to select
      */
-    public convenience init(navigationController: UINavigationController? = nil, containerView: UIView = UIApplication.shared.keyWindow!, title: String, items: [String]) {
+    public convenience init(navigationController: UINavigationController? = nil, containerView: UIView = UIApplication.shared.keyWindow!, title: String, items: [String], titleItems: [String]) {
         
-        self.init(navigationController: navigationController, containerView: containerView, title: BTTitle.title(title), items: items)
+        self.init(navigationController: navigationController, containerView: containerView, title: BTTitle.title(title), items: items, titleItems: titleItems)
     }
     
     /**
@@ -292,7 +293,7 @@ open class BTNavigationDropdownMenu: UIView {
      - title: An enum to define title to be displayed, can be a string or index of items.
      - items: The array of items to select
      */
-    public init(navigationController: UINavigationController? = nil, containerView: UIView = UIApplication.shared.keyWindow!, title: BTTitle, items: [String]) {
+    public init(navigationController: UINavigationController? = nil, containerView: UIView = UIApplication.shared.keyWindow!, title: BTTitle, items: [String], titleItems: [String]? = nil) {
         // Key window
         guard let window = UIApplication.shared.keyWindow else {
             super.init(frame: CGRect.zero)
@@ -330,6 +331,11 @@ open class BTNavigationDropdownMenu: UIView {
         
         self.isShown = false
         self.items = items
+        if let titleItems = titleItems {
+            self.titleItems = titleItems
+        } else {
+            self.titleItems = items
+        }
         
         // Init button as navigation title
         self.menuButton = UIButton(frame: frame)
@@ -366,9 +372,15 @@ open class BTNavigationDropdownMenu: UIView {
         self.setupDefaultConfiguration()
         
         // Init table view
-        let navBarHeight = self.navigationController?.navigationBar.bounds.size.height ?? 0
+        let navBarHeight = CGFloat(0.0)//self.navigationController?.navigationBar.bounds.size.height ?? 0
         let statusBarHeight = UIApplication.shared.statusBarFrame.height
-        self.tableView = BTTableView(frame: CGRect(x: menuWrapperBounds.origin.x, y: menuWrapperBounds.origin.y + 0.5, width: menuWrapperBounds.width, height: menuWrapperBounds.height + 300 - navBarHeight - statusBarHeight), items: items, title: titleToDisplay, configuration: self.configuration)
+        self.tableView = BTTableView(frame: CGRect(x: menuWrapperBounds.origin.x,
+                                                   y: menuWrapperBounds.origin.y + 0.5,
+                                                   width: menuWrapperBounds.width,
+                                                   height: menuWrapperBounds.height + 300 - navBarHeight - statusBarHeight),
+                                     items: items,
+                                     title: titleToDisplay,
+                                     configuration: self.configuration)
         
         self.tableView.selectRowAtIndexPathHandler = { [weak self] (indexPath: Int) -> () in
             guard let selfie = self else {
@@ -376,7 +388,7 @@ open class BTNavigationDropdownMenu: UIView {
             }
             selfie.didSelectItemAtIndexHandler!(indexPath)
             if selfie.shouldChangeTitleText! {
-                selfie.setMenuTitle("\(selfie.tableView.items[indexPath])")
+                selfie.setMenuTitle("\(selfie.titleItems[indexPath])")
             }
             self?.hideMenu()
             self?.layoutSubviews()
@@ -409,7 +421,7 @@ open class BTNavigationDropdownMenu: UIView {
         self.menuTitle.textColor = self.configuration.menuTitleColor
         self.menuArrow.sizeToFit()
         self.menuArrow.center = CGPoint(x: self.menuTitle.frame.maxX + self.configuration.arrowPadding, y: self.frame.size.height/2)
-        self.menuWrapper.frame.origin.y = self.navigationController!.navigationBar.frame.maxY
+        self.menuWrapper.frame.origin.y = 0//self.navigationController!.navigationBar.frame.maxY
         self.tableView.reloadData()
     }
     
@@ -445,7 +457,7 @@ open class BTNavigationDropdownMenu: UIView {
         self.tableView.reloadData()
         
         if self.shouldChangeTitleText! {
-            self.setMenuTitle("\(self.tableView.items[index])")
+            self.setMenuTitle("\(self.titleItems[index])")
         }
     }
     
@@ -459,7 +471,7 @@ open class BTNavigationDropdownMenu: UIView {
     }
     
     func showMenu() {
-        self.menuWrapper.frame.origin.y = self.navigationController!.navigationBar.frame.maxY
+        self.menuWrapper.frame.origin.y = 0//self.navigationController!.navigationBar.frame.maxY
         
         self.isShown = true
         
@@ -468,7 +480,7 @@ open class BTNavigationDropdownMenu: UIView {
         headerView.backgroundColor = self.configuration.cellBackgroundColor
         self.tableView.tableHeaderView = headerView
         
-        self.topSeparator.backgroundColor = self.configuration.cellSeparatorColor
+        self.topSeparator.backgroundColor = self.configuration.cellBackgroundColor
         
         // Rotate arrow
         self.rotateArrow()
@@ -505,7 +517,8 @@ open class BTNavigationDropdownMenu: UIView {
             options: [],
             animations: {
                 self.tableView.frame.origin.y = CGFloat(-300)
-                self.backgroundView.alpha = self.configuration.maskBackgroundOpacity },
+                self.backgroundView.alpha = self.configuration.maskBackgroundOpacity
+        },
             completion: nil
         )
     }
@@ -519,22 +532,22 @@ open class BTNavigationDropdownMenu: UIView {
         // Change background alpha
         self.backgroundView.alpha = self.configuration.maskBackgroundOpacity
         
-        UIView.animate(
-            withDuration: self.configuration.animationDuration * 1.5,
-            delay: 0,
-            usingSpringWithDamping: 0.7,
-            initialSpringVelocity: 0.5,
-            options: [],
-            animations: {
-                self.tableView.frame.origin.y = CGFloat(-200)
-        }, completion: nil
-        )
+        var animationDuration: Double = self.configuration.animationDuration
+        var damping: CGFloat = 1.0
+        var velocity: CGFloat = 1.0
         
-        // Animation
+        if self.bounces {
+            animationDuration *= 1.5
+            damping = 0.7
+            velocity = 0.5
+        }
+        
         UIView.animate(
-            withDuration: self.configuration.animationDuration,
+            withDuration: animationDuration,
             delay: 0,
-            options: UIViewAnimationOptions(),
+            usingSpringWithDamping: damping,
+            initialSpringVelocity: velocity,
+            options: [],
             animations: {
                 self.tableView.frame.origin.y = -CGFloat(self.items.count) * self.configuration.cellHeight - 300
                 self.backgroundView.alpha = 0 },
